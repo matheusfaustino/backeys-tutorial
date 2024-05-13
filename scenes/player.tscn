@@ -1,7 +1,16 @@
-[gd_scene load_steps=26 format=3 uid="uid://dr5xq1mjld65u"]
+[gd_scene load_steps=32 format=3 uid="uid://dr5xq1mjld65u"]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_4ri5a"]
 [ext_resource type="Texture2D" uid="uid://c3qse5dfc35od" path="res://assets/sprites/knight.png" id="1_pv6bq"]
+[ext_resource type="PackedScene" uid="uid://bymypirn1yu00" path="res://scenes/state_machine.tscn" id="3_4pmu4"]
+[ext_resource type="Script" path="res://scripts/player/idle.gd" id="4_hti54"]
+[ext_resource type="Script" path="res://scripts/player/jump.gd" id="5_ndh5x"]
+[ext_resource type="Script" path="res://scripts/player/move.gd" id="6_wyhdc"]
+[ext_resource type="Script" path="res://scripts/player/fall.gd" id="7_il7lp"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_c5cqj"]
+atlas = ExtResource("1_pv6bq")
+region = Rect2(0, 160, 32, 32)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_eyqqu"]
 atlas = ExtResource("1_pv6bq")
@@ -91,6 +100,14 @@ region = Rect2(224, 96, 32, 32)
 animations = [{
 "frames": [{
 "duration": 1.0,
+"texture": SubResource("AtlasTexture_c5cqj")
+}],
+"loop": true,
+"name": &"fall",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
 "texture": SubResource("AtlasTexture_eyqqu")
 }, {
 "duration": 1.0,
@@ -112,7 +129,7 @@ animations = [{
 }],
 "loop": true,
 "name": &"jump",
-"speed": 5.0
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -164,7 +181,7 @@ animations = [{
 "texture": SubResource("AtlasTexture_8qm4t")
 }],
 "loop": true,
-"name": &"run",
+"name": &"move",
 "speed": 10.0
 }]
 
@@ -179,9 +196,42 @@ script = ExtResource("1_4ri5a")
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 position = Vector2(0, -12)
 sprite_frames = SubResource("SpriteFrames_x56le")
-animation = &"jump"
+animation = &"fall"
 autoplay = "idle"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, -5)
 shape = SubResource("CircleShape2D_rsk58")
+
+[node name="state_machine" parent="." node_paths=PackedStringArray("starting_state") instance=ExtResource("3_4pmu4")]
+starting_state = NodePath("idle")
+
+[node name="idle" type="Node" parent="state_machine" node_paths=PackedStringArray("fall_state", "jump_state", "move_state")]
+script = ExtResource("4_hti54")
+fall_state = NodePath("../fall")
+jump_state = NodePath("../jump")
+move_state = NodePath("../move")
+animation_name = "idle"
+
+[node name="jump" type="Node" parent="state_machine" node_paths=PackedStringArray("fall_state", "idle_state", "move_state")]
+script = ExtResource("5_ndh5x")
+fall_state = NodePath("../fall")
+idle_state = NodePath("../idle")
+move_state = NodePath("../move")
+animation_name = "jump"
+
+[node name="move" type="Node" parent="state_machine" node_paths=PackedStringArray("fall_state", "idle_state", "jump_state")]
+script = ExtResource("6_wyhdc")
+fall_state = NodePath("../fall")
+idle_state = NodePath("../idle")
+jump_state = NodePath("../jump")
+animation_name = "move"
+
+[node name="fall" type="Node" parent="state_machine" node_paths=PackedStringArray("jump_state", "idle_state", "move_state")]
+script = ExtResource("7_il7lp")
+jump_state = NodePath("../jump")
+idle_state = NodePath("../idle")
+move_state = NodePath("../move")
+animation_name = "fall"
+
+[connection signal="ready" from="." to="." method="_on_ready"]
